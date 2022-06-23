@@ -152,6 +152,7 @@ def main(argv):
 
                 if response != 0:
                     print("LOST CONNECTION TO COMPUTER, ESTOPPING NOW")
+                    robot.power_off(cut_immediately=False, timeout_sec=20)
                     estop_nogui.stop()
 
                 prevTimeSec = curTimeSec
