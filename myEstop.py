@@ -137,16 +137,16 @@ def main(argv):
 
         # Monitor estop until user exits
 
-        prevTimeSec = time.time()
+        prev_time_sec = time.time()
 
         while True:
             # Retrieve user input (non-blocking)
             c = stdscr.getch()
 
-            curTimeSec = time.time()
+            cur_time_sec = time.time()
             # Every two seconds, make sure we can ping computer
             # if we can't, activate estop
-            if(curTimeSec - prevTimeSec > 2):
+            if(cur_time_sec - prev_time_sec > 2):
                 FNULL = open(os.devnull, 'w')
                 response = subprocess.call(['ping', '-c', '1', '10.44.2.227'], stdout = FNULL)
 
@@ -155,7 +155,7 @@ def main(argv):
                     robot.power_off(cut_immediately=False, timeout_sec=20)
                     estop_nogui.stop()
 
-                prevTimeSec = curTimeSec
+                prev_time_sec = cur_time_sec
 
             try:
                 if c == ord(' '):

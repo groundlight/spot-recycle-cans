@@ -21,12 +21,14 @@ def print_image_cap_times(image_client, start_time):
     print("hand color image acquisition_time: ", image_response_hand.shot.acquisition_time.seconds - start_time)
     print("frontleft fisheye image acquisition_time: ", image_response_frontleft.shot.acquisition_time.seconds - start_time)
 
-def image_graph_test(image_client, graph_nav_client, upload_filepath, start_time):
-    #IMAGE + GRAPH TEST:
-    # 1. Gets 5 images from hand camera and frontleft camera (1 second interval)
-    # 2. Uploads graph
-    # 3. waits 5 seconds
-    # 4. Gets another 5 images from hand camera and frontleft camera (1 second interval)
+def image_graph_test(*, image_client, graph_nav_client, upload_filepath, start_time):
+    """
+    IMAGE + GRAPH TEST:
+    1. Gets 5 images from hand camera and frontleft camera (1 second interval)
+    2. Uploads graph
+    3. waits 5 seconds
+    4. Gets another 5 images from hand camera and frontleft camera (1 second interval)
+    """
 
     # Step 1
     for i in range(5):
@@ -56,7 +58,6 @@ def image_graph_test(image_client, graph_nav_client, upload_filepath, start_time
     # Step 3
     time.sleep(5)
 
-
     # Step 4
     for i in range(5):
         time.sleep(1)
@@ -73,37 +74,28 @@ def image_graph_test(image_client, graph_nav_client, upload_filepath, start_time
 def main():
 
     start_time = round(time.time())
-
     #Setup
     sdk = bosdyn.client.create_standard_sdk('ASTRO')
-
     #TODO: CHANGE ACCORDINGLY
     ROBOT_IP = '192.168.50.3'
     robot = sdk.create_robot(ROBOT_IP)
-
     #Authenticate
-    #TODO: CHANGE ACCORDINGLY
-    username = 'user'
-    password = 'r4kr99yw3hje'
-    robot.authenticate(username, password)
+    bosdyn.client.util.authenticate(robot)
 
     #Graph Nav
     graph_nav_client = robot.ensure_client(GraphNavClient.default_service_name)
-    #upload_filepath = "/home/gluser/groundlight/bdspot/gl_graph_6-9-22"
-
     #Tried multiple graphs, ranging from 1 to ~80 waypoints in size, same failure each time
-
     #TODO: CHANGE ACCORDINGLY
     upload_filepath = '/home/gluser/groundlight/bdspot/smallGraph'
-
     response = graph_nav_client.clear_graph()
 
     #image client
     image_client = robot.ensure_client(ImageClient.default_service_name)
-
     print("GETTING IMAGES BEFORE UPLOADING GRAPH:")
-
-    image_graph_test(image_client, graph_nav_client, upload_filepath, start_time)
+    image_graph_test(image_client = image_client,
+                     graph_nav_client = graph_nav_client,
+                     upload_filepath = upload_filepath,
+                     start_time = start_time)
 
 if __name__ == '__main__':
     main()
