@@ -53,8 +53,7 @@ def init_robot(IP):
     #Authenticate
     bd_username = os.environ.get("BOSDYN_CLIENT_USERNAME")
     bd_password = os.environ.get("BOSDYN_CLIENT_PASSWORD")
-    robot.authenticate(bd_password, bd_username)
-    #bosdyn.client.util.authenticate(robot)
+    robot.authenticate(bd_username, bd_password)
 
     #Clients
     robot_state_client = robot.ensure_client('robot-state')
@@ -68,7 +67,7 @@ def init_robot(IP):
     return sdk, robot, id_client, robot_state_client, command_client, image_client, \
            graph_nav_client, world_object_client, manipulation_api_client
 
-def get_batt_info():
+def get_batt_info(robot_state_client):
     robot_state = robot_state_client.get_robot_state()
     battery_state = robot_state.battery_states[0]
     charge_percent = battery_state.charge_percentage.value
@@ -112,14 +111,24 @@ def cap_hand_image(image_client, source):
 
     return img, image_response
 
-def move_robot_relative(command_client, x_meters, y_meters, theta_rad, timeout_sec = 5, blocking = True):
+def move_robot_relative(command_client, robot, 
+                        x_meters, 
+                        y_meters, 
+                        theta_rad, 
+                        timeout_sec = 10, blocking = True):
+    """
+    Moves Spot relative to its current position.
+    """
     frame_tree_snapshot = robot.get_frame_tree_snapshot()
     cmd = RobotCommandBuilder.synchro_trajectory_command_in_body_frame(x_meters, y_meters, theta_rad, frame_tree_snapshot = frame_tree_snapshot)
     cmd_id = cmd_id = command_client.robot_command(cmd, end_time_secs = time.time()+timeout_sec)
     if blocking:
-        bdcrc.block_for_trajectory_cmd(command_client, cmd_id)
+        bdcrc.block_for_trajectory_cmd(command_client, cmd_id, timeout_sec = timeout_sec)
 
-def make_grasp(grasp_request, graph_nav_client = None, graphExists = True):
+def make_grasp(grasp_request, 
+               manipulation_api_client, 
+               command_client, 
+               graph_nav_client = None, graphExists = True, verbose = False):
     """
     Makes a grasp with arm given a grasp request proto described here:
     https://dev.bostondynamics.com/protos/bosdyn/api/proto_reference#manipulation-api-proto
@@ -151,8 +160,9 @@ def make_grasp(grasp_request, graph_nav_client = None, graphExists = True):
         response = manipulation_api_client.manipulation_api_feedback_command(
             manipulation_api_feedback_request=feedback_request)
 
-#         print('Current state: ',
-#               manipulation_api_pb2.ManipulationFeedbackState.Name(response.current_state))
+        if verbose:
+            print('Current state: ',
+                  manipulation_api_pb2.ManipulationFeedbackState.Name(response.current_state))
 
         if response.current_state == manipulation_api_pb2.MANIP_STATE_GRASP_SUCCEEDED:
             success = True
@@ -173,7 +183,8 @@ def make_grasp(grasp_request, graph_nav_client = None, graphExists = True):
     carry_override_rq = manipulation_api_pb2.ApiGraspedCarryStateOverride(override_request = 3)
     override_rq = manipulation_api_pb2.ApiGraspOverrideRequest(
         carry_state_override = carry_override_rq)
-    override_response = manipulation_api_client.grasp_override_command(grasp_override_request = override_rq)
+    override_response = manipulation_api_client.grasp_override_command(
+        grasp_override_request = override_rq)
     cmd = RobotCommandBuilder.arm_stow_command()
     cmd_id = command_client.robot_command(cmd, end_time_secs = time.time()+5)
 
@@ -247,7 +258,7 @@ def gripper_open(command_client):
 
 # From "graph_nav_command_line.py"
 # https://github.com/boston-dynamics/spot-sdk/blob/master/python/examples/graph_nav_command_line/graph_nav_command_line.py
-def upload_graph_and_snapshots(graph_nav_client, upload):
+def upload_graph_and_snapshots(graph_nav_client, upload_filepath):
 
     current_graph = None
     current_waypoint_snapshots = dict()
@@ -283,9 +294,8 @@ def upload_graph_and_snapshots(graph_nav_client, upload):
     # Upload the graph to the robot.
     print("Uploading the graph and snapshots to the robot...")
     true_if_empty = not len(current_graph.anchoring.anchors)
-    response = graph_nav_client.upload_graph(lease=lease.lease_proto,
-                                                   graph=current_graph,
-                                                   generate_new_anchoring=true_if_empty)
+    response = graph_nav_client.upload_graph(graph=current_graph,
+                                             generate_new_anchoring=true_if_empty)
 
     # Upload the snapshots to the robot.
     for snapshot_id in response.unknown_waypoint_snapshot_ids:
@@ -315,15 +325,19 @@ def create_waypoint_list(graph_nav_client):
 
     #Gets the current graph and reads off waypoints
     current_graph = graph_nav_client.download_graph()
-    waypoint_list = [(waypoint.annotations.name,waypoint.id) for waypoint in current_graph.waypoints]
-    waypoint_dict = dict()
-    #make a dict and exclude default waypoints
-    for waypoint_name, waypoint_id in waypoint_list:
-        if waypoint_name == 'default':
-            continue
-        waypoint_dict[int(waypoint_name[9:])] = waypoint_id
+    waypoint_list_raw = [(waypoint.annotations.name,waypoint.id) for waypoint in current_graph.waypoints]
 
-    return waypoint_dict
+    #Remove occurences of default waypoints
+    for elem in waypoint_list_raw:
+        if(elem[0] == 'default'):
+            waypoint_list_raw.remove(elem)
+
+    waypoint_list = [0] * len(waypoint_list_raw)
+    for waypoint_num_string, waypoint_id in waypoint_list_raw:
+        waypoint_num = int(waypoint_num_string[9:])
+        waypoint_list[waypoint_num] = waypoint_id
+
+    return waypoint_list
 
 # From "graph_nav_command_line.py"
 # https://github.com/boston-dynamics/spot-sdk/blob/master/python/examples/graph_nav_command_line/graph_nav_command_line.py
@@ -339,7 +353,7 @@ def set_initial_localization_fiducial(state_client, graph_nav_client):
     graph_nav_client.set_localization(initial_guess_localization=localization,
                                             ko_tform_body=current_odom_tform_body)
 
-def graph_localize_fiducial(command_client, graph_nav_client, robot_state_client, timeout_sec = 5):
+def graph_localize_fiducial(command_client, graph_nav_client, robot_state_client, robot, timeout_sec = 5):
 
     """
     Rotates + moves in 30˚ and 0.5m increments to find a fiducial and initialize graph.
@@ -358,12 +372,12 @@ def graph_localize_fiducial(command_client, graph_nav_client, robot_state_client
             except ResponseError as e:
                 print("FAILED: could not perform fidicial init, will shift and re-attempt")
                 pass
-            move_robot_relative(command_client, 0, 0, np.pi/6) #rotates 30˚ CCW
-        move_robot_relative(command_client, 0, 0.5, 0) #moves 0.5 meters left
+            move_robot_relative(command_client, robot, 0, 0, np.pi/6) #rotates 30˚ CCW
+        move_robot_relative(command_client, robot, 0, 0.5, 0) #moves 0.5 meters left
     print("FAILED: could not find nearby fiducial")
     return False
 
-def graphDelGetGraphLoc(graph_nav_client):
+def graph_del_get_graph_loc(graph_nav_client):
     """
     Graph MUST be deleted BEFORE arm camera(s) (color or depth) are used. This includes
     implicit uses of arm camera(s) such as manipulation/door api calls.
@@ -383,11 +397,12 @@ def graphDelGetGraphLoc(graph_nav_client):
 
     return wp_loc_proto
 
-def graph_localize_guess(graph_nav_client, init_guess_loc):
+def graph_localize_guess(graph_nav_client, robot_state_client, init_guess_loc):
     fid_init_code = graph_nav_pb2.SetLocalizationRequest.FiducialInit.FIDUCIAL_INIT_NO_FIDUCIAL
 
     robot_state = robot_state_client.get_robot_state()
-    current_vision_tform_body = get_vision_tform_body(robot_state.kinematic_state.transforms_snapshot).to_proto()
+    current_vision_tform_body = get_vision_tform_body(
+        robot_state.kinematic_state.transforms_snapshot).to_proto()
 
     response = graph_nav_client.set_localization(initial_guess_localization = init_guess_loc,
                                              ko_tform_body = current_vision_tform_body,
@@ -418,7 +433,7 @@ def check_success(graph_nav_client, command_id=-1):
         # Navigation command is not complete yet.
         return False
 
-def wait_until_finished_nav(nav_to_cmd_id, timeout_sec = 10):
+def wait_until_finished_nav(graph_nav_client, nav_to_cmd_id, timeout_sec = 10):
     """
     Takes in a navigation command id.
     Blocks until command is finished executing as determined by check_success.

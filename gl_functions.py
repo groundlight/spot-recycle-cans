@@ -10,7 +10,7 @@ from PIL import Image
 from io import BytesIO
 np.random.seed(0)
 
-def sweep_localize(det, img, verbose = False):
+def sweep_localize(gl, det, img, det_conf = 0.65, verbose = False):
 
     img_dims = np.array([img.shape[1],img.shape[0]])
 
@@ -48,7 +48,7 @@ def sweep_localize(det, img, verbose = False):
             slice_label = image_query.result.label
             slice_conf = image_query.result.confidence
 
-            if slice_label == 'PASS':
+            if slice_label == 'PASS' and slice_conf > det_conf:
                 if verbose:
                     ax[row, col].set_title('cube found, conf: '+ str(np.round(slice_conf,2)))
                     ax[row, col].imshow(slice_img_mat)
@@ -66,15 +66,18 @@ def sweep_localize(det, img, verbose = False):
         return None
 
     if verbose:
-        ax[max_2d_ind[0], max_2d_ind[1]].set_title('CUBE FOUND, BEST CONF: ' + str(np.round(best_conf,2)), fontsize = 15, color = 'lime')
+        ax[max_2d_ind[0], max_2d_ind[1]].set_title(
+            'CUBE FOUND, BEST CONF: ' + str(np.round(best_conf,2)), fontsize = 15, color = 'lime')
         plt.show()
 
     best_px_start, best_px_end = slice_dict[max_2d_ind]
     best_slice_img_mat = img[best_px_start[1]:best_px_end[1],best_px_start[0]:best_px_end[0],:]
 
-    return (best_px_start, np.minimum(best_px_end, img_dims), sweep_localize(det, best_slice_img_mat, verbose = verbose))
+    return (best_px_start, 
+            np.minimum(best_px_end, img_dims), 
+            sweep_localize(gl, det, best_slice_img_mat, det_conf = det_conf, verbose = verbose))
 
-def mat_thru_et(det, mat):
+def mat_thru_det(det, mat):
     img_PIL = Image.fromarray(cv2.cvtColor(mat, cv2.COLOR_BGR2RGB))
     byte_io = BytesIO()
 
@@ -112,7 +115,7 @@ def plot_tree_on_image_helper(ax, tree, prevPx):
         return
 
     color = cmap(np.random.rand())
-    ax.scatter([tree[0][0] + prevPx[0]],[tree[0][1]  + prevPx[1]],marker = 'o', s = 30, color = color)
-    ax.scatter([tree[1][0]  + prevPx[0]],[tree[1][1]  + prevPx[1]],marker = 'o', s = 30, color = color)
+    ax.scatter([tree[0][0] + prevPx[0]],[tree[0][1] + prevPx[1]],marker = 'o', s = 30, color = color)
+    ax.scatter([tree[1][0] + prevPx[0]],[tree[1][1] + prevPx[1]],marker = 'o', s = 30, color = color)
     prevPx += tree[0]
     plot_tree_on_image_helper(ax, tree[2], prevPx)
