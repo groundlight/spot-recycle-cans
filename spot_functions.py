@@ -7,6 +7,7 @@ from copy import deepcopy
 import cv2
 import time
 from PIL import Image
+import logging
 
 #Bosdyn client imports
 import bosdyn.client
@@ -83,7 +84,7 @@ def get_lease(robot):
 
 def power_on(robot):
     robot.power_on(timeout_sec=20)
-    print(robot.is_powered_on())
+    logging.info(robot.is_powered_on())
     robot.time_sync.wait_for_sync()
     return True
 
@@ -98,7 +99,7 @@ def cap_hand_image(image_client, source):
         dtype = np.uint8
         channels = 3
     else:
-        print('NOT A SUPPORTED IMAGE SOURCE')
+        logging.error('NOT A SUPPORTED IMAGE SOURCE')
         return None
 
     image_response = image_client.get_image_from_sources([source])[0]
@@ -111,10 +112,10 @@ def cap_hand_image(image_client, source):
 
     return img, image_response
 
-def move_robot_relative(command_client, robot, 
-                        x_meters, 
-                        y_meters, 
-                        theta_rad, 
+def move_robot_relative(command_client, robot,
+                        x_meters,
+                        y_meters,
+                        theta_rad,
                         timeout_sec = 10, blocking = True):
     """
     Moves Spot relative to its current position.
@@ -125,9 +126,9 @@ def move_robot_relative(command_client, robot,
     if blocking:
         bdcrc.block_for_trajectory_cmd(command_client, cmd_id, timeout_sec = timeout_sec)
 
-def make_grasp(grasp_request, 
-               manipulation_api_client, 
-               command_client, 
+def make_grasp(grasp_request,
+               manipulation_api_client,
+               command_client,
                graph_nav_client = None, graphExists = True, verbose = False):
     """
     Makes a grasp with arm given a grasp request proto described here:
@@ -161,7 +162,7 @@ def make_grasp(grasp_request,
             manipulation_api_feedback_request=feedback_request)
 
         if verbose:
-            print('Current state: ',
+            logging.info('Current state: ',
                   manipulation_api_pb2.ManipulationFeedbackState.Name(response.current_state))
 
         if response.current_state == manipulation_api_pb2.MANIP_STATE_GRASP_SUCCEEDED:
@@ -173,7 +174,7 @@ def make_grasp(grasp_request,
         cur_time_sec = time.time()
 
         if cur_time_sec - start_time_sec > 15:
-            print('GRASP TOOK TOO LONG, STOPPING NOW')
+            logging.warning('GRASP TOOK TOO LONG, STOPPING NOW')
             response.current_state == manipulation_api_pb2.MANIP_STATE_GRASP_FAILED
             break
 
@@ -232,7 +233,7 @@ def move_to_and_look_at(command_client, move_to, look_at, blocking = True):
         try:
             bdcrc.block_until_arm_arrives(command_client, gaze_command_id, timeout_sec = time.time() + 3.0)
         except:
-            print('ARM already at desired location and orientation')
+            logging.warning('ARM already at desired location and orientation')
 
 def randomGazeDown():
     # NOT EXACT, used for roughly calculating points of maximum reach
@@ -265,13 +266,13 @@ def upload_graph_and_snapshots(graph_nav_client, upload_filepath):
     current_edge_snapshots = dict()
 
     """Upload the graph and snapshots to the robot."""
-    print("Loading the graph from disk into local storage...")
+    logging.info("Loading the graph from disk into local storage...")
     with open(upload_filepath + "/graph", "rb") as graph_file:
         # Load the graph from disk.
         data = graph_file.read()
         current_graph = map_pb2.Graph()
         current_graph.ParseFromString(data)
-        print("Loaded graph has {} waypoints and {} edges".format(
+        logging.info("Loaded graph has {} waypoints and {} edges".format(
             len(current_graph.waypoints), len(current_graph.edges)))
 
     for waypoint in current_graph.waypoints:
@@ -292,7 +293,7 @@ def upload_graph_and_snapshots(graph_nav_client, upload_filepath):
             edge_snapshot.ParseFromString(snapshot_file.read())
             current_edge_snapshots[edge_snapshot.id] = edge_snapshot
     # Upload the graph to the robot.
-    print("Uploading the graph and snapshots to the robot...")
+    logging.info("Uploading the graph and snapshots to the robot...")
     true_if_empty = not len(current_graph.anchoring.anchors)
     response = graph_nav_client.upload_graph(graph=current_graph,
                                              generate_new_anchoring=true_if_empty)
@@ -301,11 +302,11 @@ def upload_graph_and_snapshots(graph_nav_client, upload_filepath):
     for snapshot_id in response.unknown_waypoint_snapshot_ids:
         waypoint_snapshot = current_waypoint_snapshots[snapshot_id]
         graph_nav_client.upload_waypoint_snapshot(waypoint_snapshot)
-        print("Uploaded {}".format(waypoint_snapshot.id))
+        logging.info("Uploaded {}".format(waypoint_snapshot.id))
     for snapshot_id in response.unknown_edge_snapshot_ids:
         edge_snapshot = current_edge_snapshots[snapshot_id]
         graph_nav_client.upload_edge_snapshot(edge_snapshot)
-        print("Uploaded {}".format(edge_snapshot.id))
+        logging.info("Uploaded {}".format(edge_snapshot.id))
 
     # The upload is complete! Check that the robot is localized to the graph,
     # and if it is not, prompt the user to localize the robot before attempting
@@ -313,8 +314,7 @@ def upload_graph_and_snapshots(graph_nav_client, upload_filepath):
     localization_state = graph_nav_client.get_localization_state()
     if not localization_state.localization.waypoint_id:
         # The robot is not localized to the newly uploaded graph.
-        print("\n")
-        print("Upload complete! The robot is currently not localized to the map; please localize")
+        logging.warning("Upload complete! The robot is currently not localized to the map; please localize")
     return response
 
 def create_waypoint_list(graph_nav_client):
@@ -364,17 +364,17 @@ def graph_localize_fiducial(command_client, graph_nav_client, robot_state_client
 
     for i in range(3):
         for j in range(4):
-            print("attempt #: ", i*4+j)
+            logging.info("attempt #: ", i*4+j)
             try:
                 set_initial_localization_fiducial(robot_state_client, graph_nav_client)
-                print("SUCCESS: initialized location to using nearest fiducial")
+                logging.info("SUCCESS: initialized location to using nearest fiducial")
                 return True
             except ResponseError as e:
-                print("FAILED: could not perform fidicial init, will shift and re-attempt")
+                logging.warning("FAILED: could not perform fidicial init, will shift and re-attempt")
                 pass
             move_robot_relative(command_client, robot, 0, 0, np.pi/6) #rotates 30˚ CCW
         move_robot_relative(command_client, robot, 0, 0.5, 0) #moves 0.5 meters left
-    print("FAILED: could not find nearby fiducial")
+    logging.error("FAILED: could not find nearby fiducial")
     return False
 
 def graph_del_get_graph_loc(graph_nav_client):
@@ -421,13 +421,13 @@ def check_success(graph_nav_client, command_id=-1):
         # Successfully completed the navigation commands!
         return True
     elif status.status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_LOST:
-        print("Robot got lost when navigating the route, the robot will now sit down.")
+        logging.warning("Robot got lost when navigating the route, the robot will now sit down.")
         return True
     elif status.status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_STUCK:
-        print("Robot got stuck when navigating the route, the robot will now sit down.")
+        logging.warning("Robot got stuck when navigating the route, the robot will now sit down.")
         return True
     elif status.status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_ROBOT_IMPAIRED:
-        print("Robot is impaired.")
+        logging.error("Robot is impaired.")
         return True
     else:
         # Navigation command is not complete yet.

@@ -8,6 +8,7 @@ import os
 import PIL
 from PIL import Image
 from io import BytesIO
+import logging
 np.random.seed(0)
 
 def sweep_localize(gl, det, img, det_conf = 0.65, verbose = False):
@@ -35,7 +36,7 @@ def sweep_localize(gl, det, img, det_conf = 0.65, verbose = False):
 
             slice_dict[(row, col)] = (px_start, pxEnd)
             slice_img_mat = img[px_start[1]:pxEnd[1],px_start[0]:pxEnd[0],:]
-            
+
             image_query = mat_thru_det(gl, det, slice_img_mat)
             slice_label = image_query.result.label
             slice_conf = image_query.result.confidence
@@ -65,8 +66,8 @@ def sweep_localize(gl, det, img, det_conf = 0.65, verbose = False):
     best_px_start, best_px_end = slice_dict[max_2d_ind]
     best_slice_img_mat = img[best_px_start[1]:best_px_end[1],best_px_start[0]:best_px_end[0],:]
 
-    return (best_px_start, 
-            np.minimum(best_px_end, img_dims), 
+    return (best_px_start,
+            np.minimum(best_px_end, img_dims),
             sweep_localize(gl, det, best_slice_img_mat, det_conf = det_conf, verbose = verbose))
 
 def mat_thru_det(gl, det, mat):
