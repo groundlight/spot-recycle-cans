@@ -55,7 +55,7 @@ def sweep_localize(gl, det, img, det_conf = 0.65, verbose = False):
     max_2d_ind = np.unravel_index(max_1d_ind, slice_confidences.shape)
 
     best_conf = slice_confidences[max_2d_ind]
-    if best_conf < 0.65:
+    if best_conf < det_conf:
         return None
 
     if verbose:
