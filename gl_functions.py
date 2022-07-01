@@ -35,16 +35,8 @@ def sweep_localize(gl, det, img, det_conf = 0.65, verbose = False):
 
             slice_dict[(row, col)] = (px_start, pxEnd)
             slice_img_mat = img[px_start[1]:pxEnd[1],px_start[0]:pxEnd[0],:]
-
-            slice_img_PIL = Image.fromarray(cv2.cvtColor(slice_img_mat, cv2.COLOR_BGR2RGB))
-            byte_io = BytesIO()
-
-            slice_img_PIL.save(byte_io, 'jpeg')
-            jpg_buffer = byte_io.getvalue()
-            byte_io.close()
-
-            image_query = gl.submit_image_query(detector_id=det.id, image = jpg_buffer)
-
+            
+            image_query = mat_thru_det(gl, det, slice_img_mat)
             slice_label = image_query.result.label
             slice_conf = image_query.result.confidence
 
@@ -77,7 +69,7 @@ def sweep_localize(gl, det, img, det_conf = 0.65, verbose = False):
             np.minimum(best_px_end, img_dims), 
             sweep_localize(gl, det, best_slice_img_mat, det_conf = det_conf, verbose = verbose))
 
-def mat_thru_det(det, mat):
+def mat_thru_det(gl, det, mat):
     img_PIL = Image.fromarray(cv2.cvtColor(mat, cv2.COLOR_BGR2RGB))
     byte_io = BytesIO()
 
