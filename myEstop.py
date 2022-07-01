@@ -65,8 +65,10 @@ def main(argv):
     """
     parser = argparse.ArgumentParser()
     bosdyn.client.util.add_base_arguments(parser)
+    parser.add_argument('-i', '--ip', default = '10.44.2.227', help = 'Your computer ip', required = True)
     parser.add_argument('-t', '--timeout', type=float, default=5, help='Timeout in seconds')
     options = parser.parse_args(argv)
+    print(options.ip)
 
     # Create robot object
     sdk = bosdyn.client.create_standard_sdk('estop_nogui')
@@ -148,7 +150,7 @@ def main(argv):
             # if we can't, activate estop
             if(cur_time_sec - prev_time_sec > 2):
                 FNULL = open(os.devnull, 'w')
-                response = subprocess.call(['ping', '-c', '1', '10.44.2.227'], stdout = FNULL)
+                response = subprocess.call(['ping', '-c', '1', options.ip], stdout = FNULL)
 
                 if response != 0:
                     print("LOST CONNECTION TO COMPUTER, ESTOPPING NOW")
