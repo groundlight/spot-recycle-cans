@@ -44,6 +44,9 @@ from bosdyn.util import seconds_to_duration
 from bosdyn.geometry import EulerZXY
 from bosdyn.client.exceptions import ResponseError
 
+#Internal repo imports
+from constants import *
+
 
 def init_robot(IP):
     #Setup
@@ -163,7 +166,7 @@ def make_grasp(grasp_request,
 
         if verbose:
             logging.info('Current state: ',
-                  manipulation_api_pb2.ManipulationFeedbackState.Name(response.current_state))
+                  str(manipulation_api_pb2.ManipulationFeedbackState.Name(response.current_state)))
 
         if response.current_state == manipulation_api_pb2.MANIP_STATE_GRASP_SUCCEEDED:
             success = True
@@ -180,16 +183,22 @@ def make_grasp(grasp_request,
 
         time.sleep(0.25)
 
+    override_response = stowable_override(manipulation_api_client)    
+        
+    cmd = RobotCommandBuilder.arm_stow_command()
+    cmd_id = command_client.robot_command(cmd, end_time_secs = time.time()+5)
+
+    return response, success
+
+def stowable_override(manipulation_api_client):
     #overrides so object can be carried and stowed
     carry_override_rq = manipulation_api_pb2.ApiGraspedCarryStateOverride(override_request = 3)
     override_rq = manipulation_api_pb2.ApiGraspOverrideRequest(
         carry_state_override = carry_override_rq)
     override_response = manipulation_api_client.grasp_override_command(
         grasp_override_request = override_rq)
-    cmd = RobotCommandBuilder.arm_stow_command()
-    cmd_id = command_client.robot_command(cmd, end_time_secs = time.time()+5)
-
-    return response, success
+    
+    return override_response
 
 def move_to_and_look_at(command_client, move_to, look_at, blocking = True):
     """Takes in two, 3-element array like types.
@@ -253,9 +262,20 @@ def randomGazeDown():
               np.random.uniform(-0.2,-1)]
     return move_to, look_at
 
-def gripper_open(command_client):
+def gripper_open(command_client, timeout_sec = 5):
     cmd = RobotCommandBuilder.claw_gripper_open_fraction_command(1.0)
     cmd_id = command_client.robot_command(cmd, end_time_secs = time.time()+timeout_sec)
+    
+def gripper_close(command_client, timeout_sec = 5):
+    cmd = RobotCommandBuilder.claw_gripper_open_fraction_command(0.0)
+    cmd_id = command_client.robot_command(cmd, end_time_secs = time.time()+timeout_sec)
+    
+def blocking_stow(command_client, timeout_sec = 10):
+    cmd = RobotCommandBuilder.arm_stow_command()
+    cmd_id = command_client.robot_command(cmd, end_time_secs = time.time() + timeout_sec)
+    success = bdcrc.block_until_arm_arrives(command_client, cmd_id, 
+                                            timeout_sec = time.time() + timeout_sec)
+    return success
 
 # From "graph_nav_command_line.py"
 # https://github.com/boston-dynamics/spot-sdk/blob/master/python/examples/graph_nav_command_line/graph_nav_command_line.py
