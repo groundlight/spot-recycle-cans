@@ -82,6 +82,11 @@ def mat_thru_det(gl, det, mat):
 
     return image_query
 
+def gl_init():
+    GROUNDLIGHT_API_TOKEN = os.environ.get("GROUNDLIGHT_API_TOKEN")
+    gl = Groundlight(api_token=GROUNDLIGHT_API_TOKEN)
+    return gl
+
 def assemble_px_tree(tree):
     return assemble_px_tree_helper(np.array([0,0]), tree)
 
