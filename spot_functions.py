@@ -387,17 +387,17 @@ def graph_localize_fiducial(command_client, graph_nav_client, robot_state_client
             logging.info("attempt #: ", i*4+j)
             try:
                 set_initial_localization_fiducial(robot_state_client, graph_nav_client)
-                logging.info("SUCCESS: initialized location to using nearest fiducial")
+                logging.info("SUCCESS – initialized location to using nearest fiducial")
                 return True
             except ResponseError as e:
-                logging.warning("FAILED: could not perform fidicial init, will shift and re-attempt")
+                logging.warning("could not perform fidicial init, will shift and re-attempt")
                 pass
             move_robot_relative(command_client, robot, 0, 0, np.pi/6) #rotates 30˚ CCW
         move_robot_relative(command_client, robot, 0, 0.5, 0) #moves 0.5 meters left
-    logging.error("FAILED: could not find nearby fiducial")
+    logging.error("FAILURE – could not find nearby fiducial")
     return False
 
-def graph_del_get_graph_loc(graph_nav_client):
+def graph_del_save_state(graph_nav_client, robot):
     """
     Graph MUST be deleted BEFORE arm camera(s) (color or depth) are used. This includes
     implicit uses of arm camera(s) such as manipulation/door api calls.
@@ -407,26 +407,48 @@ def graph_del_get_graph_loc(graph_nav_client):
     information see "imageTest.py" in this repo.
 
     Graph can be reuploaded with upload_graph_and_snapshots and reinitialized by saving
-    wp_loc_proto and calling graph_localize_guess with "init_guess_loc = wp_loc_proto".
+    wp_loc_proto and calling graph_localize_guess with "prev_graph_state = prev_graph_state".
 
     """
 
-    loc_response = graph_nav_client.get_localization_state()
-    wp_loc_proto = loc_response.localization
-    clear_response = graph_nav_client.clear_graph()
+    prev_loc_response = graph_nav_client.get_localization_state()
+    prev_graph_loc_proto = prev_loc_response.localization
 
-    return wp_loc_proto
+    prev_waypoint_id = prev_graph_loc_proto.waypoint_id
 
-def graph_localize_guess(graph_nav_client, robot_state_client, init_guess_loc):
-    fid_init_code = graph_nav_pb2.SetLocalizationRequest.FiducialInit.FIDUCIAL_INIT_NO_FIDUCIAL
+    prev_waypoint_to_body_proto = prev_graph_loc_proto.waypoint_tform_body
+    prev_waypoint_to_body_se3 = bosdyn.client.math_helpers.SE3Pose.from_proto(
+        prev_waypoint_to_body_proto)
 
-    robot_state = robot_state_client.get_robot_state()
-    current_vision_tform_body = get_vision_tform_body(
-        robot_state.kinematic_state.transforms_snapshot).to_proto()
+    frame_tree_snapshot = robot.get_frame_tree_snapshot()
+    prev_body_to_vision_se3 = get_a_tform_b(frame_tree_snapshot, frame_a = 'vision', frame_b = 'body')
 
-    response = graph_nav_client.set_localization(initial_guess_localization = init_guess_loc,
-                                             ko_tform_body = current_vision_tform_body,
-                                             fiducial_init = fid_init_code)
+    vision_to_waypoint_se3 = (prev_waypoint_to_body_se3 * prev_body_to_vision_se3).inverse()
+    
+    prev_graph_state = {'prev_waypoint_id':prev_waypoint_id, 
+                   'vision_to_waypoint_se3': vision_to_waypoint_se3}
+    
+    graph_nav_client.clear_graph()
+
+    return prev_graph_state
+
+def graph_localize_saved_state(graph_nav_client, robot, prev_graph_state):
+    
+    prev_waypoint_id = prev_graph_state['prev_waypoint_id']
+    vision_to_waypoint_se3 = prev_graph_state['vision_to_waypoint_se3']
+    
+    fid_init_code_NO_FID = graph_nav_pb2.SetLocalizationRequest.FiducialInit.FIDUCIAL_INIT_NO_FIDUCIAL
+    
+    frame_tree_snapshot = robot.get_frame_tree_snapshot()
+    #get_a_tform_b returns transformation such that a_coords = tform * b_coords
+    body_to_vision_se3 = get_a_tform_b(frame_tree_snapshot, frame_a = 'vision', frame_b = 'body')
+    body_wrt_waypoint_proto = (body_to_vision_se3 * vision_to_waypoint_se3).to_proto()
+    
+    init_guess_loc = nav_pb2.Localization(waypoint_id = prev_waypoint_id,
+                                      waypoint_tform_body = body_wrt_waypoint_proto)
+    
+    response = graph_nav_client.set_localization(initial_guess_localization=init_guess_loc,
+                                  fiducial_init = fid_init_code_NO_FID)
     return response
 
 # From "graph_nav_command_line.py"
