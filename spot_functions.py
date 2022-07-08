@@ -45,7 +45,7 @@ from bosdyn.geometry import EulerZXY
 from bosdyn.client.exceptions import ResponseError
 
 #Internal repo imports
-from constants import *
+import constants
 
 
 def init_robot(IP):
@@ -70,6 +70,11 @@ def init_robot(IP):
 
     return sdk, robot, id_client, robot_state_client, command_client, image_client, \
            graph_nav_client, world_object_client, manipulation_api_client
+
+def gl_init():
+    GROUNDLIGHT_API_TOKEN = os.environ.get("GROUNDLIGHT_API_TOKEN")
+    gl = Groundlight(api_token=GROUNDLIGHT_API_TOKEN)
+    return gl
 
 def get_batt_info(robot_state_client):
     robot_state = robot_state_client.get_robot_state()
