@@ -397,6 +397,20 @@ def graph_localize_fiducial(command_client, graph_nav_client, robot_state_client
     logging.error("FAILURE – could not find nearby fiducial")
     return False
 
+def real_frame_add(frame_tree_snapshot, 
+                   parent_tform_child_proto, 
+                   parent_frame_name, 
+                   child_frame_name):
+    
+    fts_dict = dict(frame_tree_snapshot.child_to_parent_edge_map)
+    response = bosdyn.client.frame_helpers.add_edge_to_tree(frame_tree_snapshot = fts_dict,
+                                             parent_tform_child = parent_tform_child_proto,
+                                             parent_frame_name = parent_frame_name,
+                                             child_frame_name = child_frame_name)
+    fts_with_new_frame = geometry_pb2.FrameTreeSnapshot(child_to_parent_edge_map = fts_dict)
+    
+    return fts_with_new_frame
+
 def graph_del_save_state(graph_nav_client, robot):
     """
     Graph MUST be deleted BEFORE arm camera(s) (color or depth) are used. This includes
@@ -411,22 +425,24 @@ def graph_del_save_state(graph_nav_client, robot):
 
     """
 
+    prev_frame_tree_snapshot = robot.get_frame_tree_snapshot()
     prev_loc_response = graph_nav_client.get_localization_state()
-    prev_graph_loc_proto = prev_loc_response.localization
-
-    prev_waypoint_id = prev_graph_loc_proto.waypoint_id
-
-    prev_waypoint_to_body_proto = prev_graph_loc_proto.waypoint_tform_body
-    prev_waypoint_to_body_se3 = bosdyn.client.math_helpers.SE3Pose.from_proto(
-        prev_waypoint_to_body_proto)
-
-    frame_tree_snapshot = robot.get_frame_tree_snapshot()
-    prev_body_to_vision_se3 = get_a_tform_b(frame_tree_snapshot, frame_a = 'vision', frame_b = 'body')
-
-    vision_to_waypoint_se3 = (prev_waypoint_to_body_se3 * prev_body_to_vision_se3).inverse()
     
-    prev_graph_state = {'prev_waypoint_id':prev_waypoint_id, 
-                   'vision_to_waypoint_se3': vision_to_waypoint_se3}
+    prev_waypoint_tform_body_proto = prev_loc_response.localization.waypoint_tform_body
+    prev_waypoint_tform_body_se3 = bosdyn.client.math_helpers.SE3Pose.from_proto(                                                                           prev_waypoint_tform_body_proto)
+    prev_body_tform_waypoint_proto = prev_waypoint_tform_body_se3.inverse().to_proto()
+    
+    prev_waypoint_id = prev_loc_response.localization.waypoint_id
+
+    prev_fts_with_waypoint = real_frame_add(prev_frame_tree_snapshot, 
+                                        prev_body_tform_waypoint_proto,
+                                        'body',
+                                        'waypoint')
+
+    vision_tform_waypoint_se3 = get_a_tform_b(prev_fts_with_waypoint, 'vision', 'waypoint')
+    
+    prev_graph_state = {'prev_waypoint_id':prev_waypoint_id,
+                        'vision_tform_waypoint_se3':vision_tform_waypoint_se3}
     
     graph_nav_client.clear_graph()
 
@@ -435,18 +451,18 @@ def graph_del_save_state(graph_nav_client, robot):
 def graph_localize_saved_state(graph_nav_client, robot, prev_graph_state):
     
     prev_waypoint_id = prev_graph_state['prev_waypoint_id']
-    vision_to_waypoint_se3 = prev_graph_state['vision_to_waypoint_se3']
-    
-    fid_init_code_NO_FID = graph_nav_pb2.SetLocalizationRequest.FiducialInit.FIDUCIAL_INIT_NO_FIDUCIAL
+    vision_tform_waypoint_se3 = prev_graph_state['vision_tform_waypoint_se3']
     
     frame_tree_snapshot = robot.get_frame_tree_snapshot()
-    #get_a_tform_b returns transformation such that a_coords = tform * b_coords
-    body_to_vision_se3 = get_a_tform_b(frame_tree_snapshot, frame_a = 'vision', frame_b = 'body')
-    body_wrt_waypoint_proto = (body_to_vision_se3 * vision_to_waypoint_se3).to_proto()
+    fts_with_waypoint = real_frame_add(frame_tree_snapshot, 
+                                       vision_tform_waypoint_se3.to_proto(),
+                                       'vision',
+                                       'waypoint')
+    waypoint_tform_body_proto = get_a_tform_b(fts_with_waypoint, 'waypoint', 'body').to_proto()
     
+    fid_init_code_NO_FID = graph_nav_pb2.SetLocalizationRequest.FiducialInit.FIDUCIAL_INIT_NO_FIDUCIAL
     init_guess_loc = nav_pb2.Localization(waypoint_id = prev_waypoint_id,
-                                      waypoint_tform_body = body_wrt_waypoint_proto)
-    
+                                          waypoint_tform_body = waypoint_tform_body_proto)
     response = graph_nav_client.set_localization(initial_guess_localization=init_guess_loc,
                                   fiducial_init = fid_init_code_NO_FID)
     return response
