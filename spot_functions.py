@@ -13,6 +13,7 @@ import logging
 import bosdyn.client
 import bosdyn.client.util
 import bosdyn.client.robot_command as bdcrc
+
 from bosdyn.client.robot_command import RobotCommandBuilder
 from bosdyn.client.robot_command import RobotCommandClient
 from bosdyn.client.image import ImageClient
@@ -24,6 +25,7 @@ from bosdyn.client.frame_helpers import (get_a_tform_b,
                                         get_odom_tform_body,
                                         BODY_FRAME_NAME,
                                         VISION_FRAME_NAME)
+import bosdyn.client.math_helpers as bdcmh
 
 #Protocol buffer imports
 from bosdyn.api import (arm_command_pb2,
