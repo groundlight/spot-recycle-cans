@@ -1,3 +1,3 @@
 timeout_sec = 10
 
-upload_filepath = "/home/gluser/groundlight/bdspot/spot/loopGraph"
+graph_upload_filepath = "/home/gluser/groundlight/bdspot/spot/big-graph-7-14-22"
