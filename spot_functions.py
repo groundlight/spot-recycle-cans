@@ -29,7 +29,9 @@ import bosdyn.client.math_helpers as bdcmh
 
 #Protocol buffer imports
 from bosdyn.api import (arm_command_pb2,
+                       basic_command_pb2,
                        geometry_pb2,
+                       gripper_command_pb2,
                        robot_command_pb2,
                        synchronized_command_pb2,
                        trajectory_pb2,
@@ -40,6 +42,8 @@ from bosdyn.api import (arm_command_pb2,
                        robot_state_pb2,
                        image_pb2)
 from bosdyn.api.graph_nav import graph_nav_pb2, map_pb2, nav_pb2
+
+from google.protobuf import wrappers_pb2
 
 #Other bosdyn imports
 from bosdyn.util import seconds_to_duration
