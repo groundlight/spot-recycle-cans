@@ -43,7 +43,7 @@ def sweep_localize(gl, det, img, det_conf = 0.65, verbose = False):
 
             if slice_label == 'PASS' and slice_conf > det_conf:
                 if verbose:
-                    ax[row, col].set_title('cube found, conf: '+ str(np.round(slice_conf,2)))
+                    ax[row, col].set_title('obj found, conf: '+ str(np.round(slice_conf,2)))
                     ax[row, col].imshow(slice_img_mat)
                 slice_confidences[row, col] = slice_conf
             else:
@@ -60,7 +60,7 @@ def sweep_localize(gl, det, img, det_conf = 0.65, verbose = False):
 
     if verbose:
         ax[max_2d_ind[0], max_2d_ind[1]].set_title(
-            'CUBE FOUND, BEST CONF: ' + str(np.round(best_conf,2)), fontsize = 15, color = 'lime')
+            'OBJ FOUND, BEST CONF: ' + str(np.round(best_conf,2)), fontsize = 15, color = 'lime')
         plt.show()
 
     best_px_start, best_px_end = slice_dict[max_2d_ind]

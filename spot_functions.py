@@ -53,7 +53,6 @@ from bosdyn.client.exceptions import ResponseError
 #Internal repo imports
 import constants
 
-
 def init_robot(IP):
     #Setup
     sdk = bosdyn.client.create_standard_sdk('ASTRO')
@@ -272,6 +271,15 @@ def gripper_open(command_client, timeout_sec = 5):
     cmd = RobotCommandBuilder.claw_gripper_open_fraction_command(1.0)
     cmd_id = command_client.robot_command(cmd, end_time_secs = time.time()+timeout_sec)
     
+def gripper_slow_open(command_client):
+
+    gripper_angles = np.linspace(0, 1, 1000)
+
+    for gripper_angle in gripper_angles:
+        cmd = RobotCommandBuilder.claw_gripper_open_fraction_command(gripper_angle)
+        cmd_id = command_client.robot_command(cmd, end_time_secs = time.time()+timeout_sec)
+        time.sleep(1/gripper_angles.shape[0])
+    
 def gripper_close(command_client, timeout_sec = 5):
     cmd = RobotCommandBuilder.claw_gripper_open_fraction_command(0.0)
     cmd_id = command_client.robot_command(cmd, end_time_secs = time.time()+timeout_sec)
@@ -282,6 +290,32 @@ def blocking_stow(command_client, timeout_sec = 10):
     success = bdcrc.block_until_arm_arrives(command_client, cmd_id, 
                                             timeout_sec = time.time() + timeout_sec)
     return success
+
+def gripper_close_with_torque(command_client, torque):
+    
+    """torque can range from 0-16.25 N*m"""
+    gripper_traj_point = trajectory_pb2.ScalarTrajectoryPoint(point = 0)
+
+    gripper_traj = trajectory_pb2.ScalarTrajectory(points = [gripper_traj_point])
+
+    claw_gripper_command = gripper_command_pb2. \
+        ClawGripperCommand.Request(trajectory = gripper_traj,
+                                   maximum_torque = wrappers_pb2.DoubleValue(value = torque))
+
+    gripper_command = gripper_command_pb2. \
+        GripperCommand.Request(claw_gripper_command = claw_gripper_command)
+
+    synchronized_command = synchronized_command_pb2.SynchronizedCommand.Request(
+        gripper_command = gripper_command)
+
+    gripper_close_command = robot_command_pb2.RobotCommand(synchronized_command = synchronized_command)
+
+    gripper_cmd_id = command_client.robot_command(gripper_close_command, 
+                                              end_time_secs = time.time()+timeout_sec)
+    
+def get_gripper_torque(robot_state_client):
+    robot_state = robot_state_client.get_robot_state()
+    return robot_state.kinematic_state.joint_states[-1].load
 
 # From "graph_nav_command_line.py"
 # https://github.com/boston-dynamics/spot-sdk/blob/master/python/examples/graph_nav_command_line/graph_nav_command_line.py
