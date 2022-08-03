@@ -9,7 +9,12 @@ import PIL
 from PIL import Image
 from io import BytesIO
 import logging
-np.random.seed(0)
+
+
+def gl_init():
+    GROUNDLIGHT_API_TOKEN = os.environ.get("GROUNDLIGHT_API_TOKEN")
+    gl = Groundlight(api_token=GROUNDLIGHT_API_TOKEN)
+    return gl
 
 def sweep_localize(gl, det, img, det_conf = 0.65, verbose = False):
 
@@ -81,11 +86,6 @@ def mat_thru_det(gl, det, mat):
     image_query = gl.submit_image_query(detector_id=det.id, image = jpg_buffer)
 
     return image_query
-
-def gl_init():
-    GROUNDLIGHT_API_TOKEN = os.environ.get("GROUNDLIGHT_API_TOKEN")
-    gl = Groundlight(api_token=GROUNDLIGHT_API_TOKEN)
-    return gl
 
 def assemble_px_tree(tree):
     return assemble_px_tree_helper(np.array([0,0]), tree)
