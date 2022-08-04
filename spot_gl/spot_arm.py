@@ -1,6 +1,12 @@
 ### MOVEMENT ###
 
 def compute_random_gaze_down():
+
+    """
+    Computes a random move_to and look_at to be used with move_to_and_look_at\
+    that will aim the gripper at a pseudo random spot downward.
+    """
+
     # NOT EXACT, used for roughly calculating points of maximum reach
     ARM_ORIGIN = np.array([0.35,0,0.1])
     ARM_LENGTH = 0.7
@@ -63,6 +69,7 @@ def move_to_and_look_at(command_client, move_to, look_at, blocking = True):
             logging.warning('ARM already at desired location and orientation')
 
 def blocking_stow(command_client, timeout_sec = 10):
+
     cmd = RobotCommandBuilder.arm_stow_command()
     cmd_id = command_client.robot_command(cmd, end_time_secs = time.time() + timeout_sec)
     success = bdcrc.block_until_arm_arrives(command_client, cmd_id,
@@ -123,7 +130,12 @@ def make_grasp(grasp_request,
     return response, success
 
 def stowable_override(manipulation_api_client):
-    #overrides so object can be carried and stowed
+    """
+    Overrides so object can be carried and stowed.
+    ONLY use when objects are small enough to be carried.
+
+    """
+
     carry_override_rq = manipulation_api_pb2.ApiGraspedCarryStateOverride(override_request = 3)
     override_rq = manipulation_api_pb2.ApiGraspOverrideRequest(
         carry_state_override = carry_override_rq)
@@ -133,6 +145,19 @@ def stowable_override(manipulation_api_client):
     return override_response
 
 def cap_hand_image(image_client, source):
+    """
+    Gets either a color or depth image along with the image response from the
+    gripper camera depending upon the source provided. Options are:
+    source = 'hand_depth_in_hand_color_frame'
+    source = 'hand_color_image'
+
+    Depth image is returned as a 1d array of 16 bit ints split into two channels
+    such that img[:, :, 0] is the MSB and img[:, :, 1] is the LSB.
+
+    Color image is a simple three channel np array.
+    """
+
+
     dtype = None
     channels = None
 
@@ -164,7 +189,9 @@ def gripper_open(command_client, timeout_sec = 5):
     cmd_id = command_client.robot_command(cmd, end_time_secs = time.time()+timeout_sec)
 
 def gripper_slow_open(command_client):
-
+    """
+    Slowly opens the gripper. Useful for minimizing bouncing when placing objects.
+    """
     gripper_angles = np.linspace(0, 1, 1000)
 
     for gripper_angle in gripper_angles:
@@ -176,9 +203,14 @@ def gripper_close(command_client, timeout_sec = 5):
     cmd = RobotCommandBuilder.claw_gripper_open_fraction_command(0.0)
     cmd_id = command_client.robot_command(cmd, end_time_secs = time.time()+timeout_sec)
 
-def gripper_close_with_torque(command_client, torque):
+def gripper_close_with_torque(command_client, torque = 5.5):
 
-    """torque can range from 0-16.25 N*m"""
+    """
+    Closes the gripper with a specific torque.
+    Useful for picking up delicate objects or dragging heavy objects.
+    Torque can range from 0-16.25 N*m.
+    Default close torque is 5.5 N*m
+    """
     gripper_traj_point = trajectory_pb2.ScalarTrajectoryPoint(point = 0)
     gripper_traj = trajectory_pb2.ScalarTrajectory(points = [gripper_traj_point])
     claw_gripper_command = gripper_command_pb2. \
@@ -193,5 +225,8 @@ def gripper_close_with_torque(command_client, torque):
                                               end_time_secs = time.time()+timeout_sec)
 
 def get_gripper_torque(robot_state_client):
+    """
+    Returns the current torque being applied by the gripper.
+    """
     robot_state = robot_state_client.get_robot_state()
     return robot_state.kinematic_state.joint_states[-1].load

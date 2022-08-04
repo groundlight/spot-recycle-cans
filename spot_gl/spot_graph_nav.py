@@ -1,7 +1,6 @@
 # From "graph_nav_command_line.py"
 # https://github.com/boston-dynamics/spot-sdk/blob/master/python/examples/graph_nav_command_line/graph_nav_command_line.py
 def upload_graph_and_snapshots(graph_nav_client, upload_filepath):
-
     current_graph = None
     current_waypoint_snapshots = dict()
     current_edge_snapshots = dict()

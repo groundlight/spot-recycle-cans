@@ -54,6 +54,11 @@ from bosdyn.client.exceptions import ResponseError
 from .constants import *
 
 def init_robot(IP):
+
+    """
+    Initalizes basic Spot classes
+    """
+
     #Setup
     sdk = bosdyn.client.create_standard_sdk('ASTRO')
     robot = sdk.create_robot(IP)
@@ -77,20 +82,34 @@ def init_robot(IP):
            graph_nav_client, world_object_client, manipulation_api_client
 
 def get_batt_info(robot_state_client):
+
+    """
+    Gets battery charge as both a percent and runtime remaining.
+    """
+
     robot_state = robot_state_client.get_robot_state()
     battery_state = robot_state.battery_states[0]
     charge_percent = battery_state.charge_percentage.value
     runtime_remaining = battery_state.estimated_runtime.seconds
-    print("Battery at:", charge_percent, "%. Robot has", runtime_remaining, "seconds left")
     return charge_percent, runtime_remaining
 
 def get_lease(robot):
+
+    """
+    Gets the robot lease.
+    """
+
     lease_client = robot.ensure_client('lease')
     lease = lease_client.acquire()
     lease_keep_alive = bosdyn.client.lease.LeaseKeepAlive(lease_client)
     return lease_client, lease, lease_keep_alive
 
 def power_on(robot):
+
+    """
+    Powers on Spot.
+    """
+
     robot.power_on(timeout_sec=20)
     logging.info(robot.is_powered_on())
     robot.time_sync.wait_for_sync()

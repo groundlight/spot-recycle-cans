@@ -18,6 +18,15 @@ def gl_init():
 
 def sweep_localize(gl, det, img, det_conf = 0.65, verbose = False):
 
+    """
+    Recursively applies a binary detector to an image to localize an object
+    within the image.Detector yes/no question should be phrased as:
+    "Is entire object within image?"
+
+    Running in verbose mode will display plots of the recursive sweep.
+    Returns a tree of tuples representing the path taken to find the object.
+    """
+
     img_dims = np.array([img.shape[1],img.shape[0]])
 
     #Recursive Base Case, i.e. too many splits
@@ -76,6 +85,12 @@ def sweep_localize(gl, det, img, det_conf = 0.65, verbose = False):
             sweep_localize(gl, det, best_slice_img_mat, det_conf = det_conf, verbose = verbose))
 
 def mat_thru_det(gl, det, mat):
+
+    """
+    Passes a three channel image represented by a numpy array through a
+    detector.
+    """
+
     img_PIL = Image.fromarray(cv2.cvtColor(mat, cv2.COLOR_BGR2RGB))
     byte_io = BytesIO()
 
@@ -88,6 +103,10 @@ def mat_thru_det(gl, det, mat):
     return image_query
 
 def assemble_px_tree(tree):
+    """
+    Takes the pixel tree produced by sweep localize and gets the location of
+    the found object.
+    """
     return assemble_px_tree_helper(np.array([0,0]), tree)
 
 def assemble_px_tree_helper(oldPx, tree):
@@ -99,12 +118,17 @@ def assemble_px_tree_helper(oldPx, tree):
 
 
 def plot_tree_on_image(ax, tree, img):
+
+    """
+    Creates a plot showing the recursive search progression for an object within
+    an image.
+    """
+
     ax.imshow(img)
     plot_tree_on_image_helper(ax, tree, np.array([0,0]))
     return ax
 
 def plot_tree_on_image_helper(ax, tree, prevPx):
-
     cmap = matplotlib.cm.get_cmap('rainbow')
 
     if tree[2] is None:
