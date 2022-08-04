@@ -14,7 +14,7 @@ An estop allows the Spot's user to instantly cut power to Spot in the event of a
 5. Run a script or notebook of interest in a separate terminal while the spot_estop script is running.
 
 ### spot_wasd:
-1. Run the wasd script via ```python3 wasd.py. 192.168.50.3```
+1. Run the wasd script via ```python3 spot_wasd.py. 192.168.50.3```
 2. Deactivate the estop with SPACE.
 3. Power on the robot with "SHIFT+p".
 4. Self-right Spot with 'r'.
