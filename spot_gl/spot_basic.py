@@ -51,7 +51,7 @@ from bosdyn.geometry import EulerZXY
 from bosdyn.client.exceptions import ResponseError
 
 #Internal repo imports
-import constants
+from .constants import *
 
 def init_robot(IP):
     #Setup
