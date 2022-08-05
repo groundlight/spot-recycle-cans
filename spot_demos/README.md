@@ -2,7 +2,7 @@
 
 ### Run a demo
 1. Navigate to the spot folder on the Jetson Backpack via "cd ~/groundlight/bdspot/spot/
-2. Run the spot_estop script from the spot_tools folder in a separate terminal. 
+2. Run the spot_estop script from the spot_tools folder in a separate terminal.
 3. Ensure that the motors are locked and the red light on the button at the back of the robot is OFF.
 4. Drag the robot into position next to a fidicual so it can initialize the graph upon standing. 
 5. Unlock motors by pressing button next to power button and ensuring the red light is ON.

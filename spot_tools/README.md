@@ -1,5 +1,5 @@
 ## spot tools
-Key tools available to Spot users 
+Key tools available to Spot users.
 Files copied from https://github.com/boston-dynamics/spot-sdk/tree/master/python/examples
 
 To use the following tools create a new terminal and follow the instructions for "Spot Jetson Connection" in the top-level directory README then navigate to the tools folder via ```cd ~/groundlight/bdspot/spot/tools/```
@@ -15,7 +15,7 @@ An estop allows the Spot's user to instantly cut power to Spot in the event of a
 
 ### spot_wasd:
 1. Run the wasd script via ```python3 spot_wasd.py. 192.168.50.3```
-2. Deactivate the estop with SPACE.
+2. Deactivate the estop with 'SPACE'.
 3. Power on the robot with "SHIFT+p".
 4. Self-right Spot with 'r'.
 5. Stand Spot with 'f'. Spot must be upright in order to stand.
