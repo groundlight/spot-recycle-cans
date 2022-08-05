@@ -20,19 +20,20 @@ An estop allows the Spot's user to instantly cut power to Spot in the event of a
 4. Self-right Spot with 'r'.
 5. Stand Spot with 'f'. Spot must be upright in order to stand.
 6. Control Spot with w, a, s, d, q, e as desired.
-7. Once finished, sit Spot with 'v'
-8. Optionally flip Spot for a battery change with 'b'
-9. Power off Spot with 'SHIFT P'
-10. Hit 'l' to return the robot lease so another script of your choice can control the robot.
+7. Once finished, sit Spot with 'v'.
+8. Optionally flip Spot for a battery change with 'b'.
+9. Power off Spot with 'SHIFT P'.
+10. Hit 'l' to return the robot lease so another script can control the robot.
 11. At any point **Hit 'SPACE' to activate the estop.** This will immediately cut power to the robot's motors and it will collapse.
 12. Hit 'TAB' or CTRL^C to close the spot_wasd script.
-13. Note that this script has a built in estop and does not require spot_estop.py to be run in paralell.
+13. Note that this script has a built in estop and does not require spot_estop.py to be run in parallel.
 
 ### Mapping a space with Spot:
 1. **Place Fiducials:** 
     - Place 3-12 fiducials within 4m of Spot's projected path through the space of interest and less than 1m above the ground. 
     - These fiducials must be 146mm square AprilTags of type 36h11. 
     - Pre-sized, ready to print fiducials can be found in the files section in the top right of this page: https://support.bostondynamics.com/s/article/About-Fiducials
+    - Laminating fiducials before placement is highly reccomended.
     
     
 2. **Initalize robot position:** 
@@ -46,7 +47,7 @@ An estop allows the Spot's user to instantly cut power to Spot in the event of a
     - Clear the map by typing ```0``` + ```ENTER```
     - Start recording by typing ```1``` + ```ENTER```
     - Verify that recording started by typing ```3``` + ```ENTER```
-    
+    s
     
 4. **Navigate Robot through space:**
     - Use keyboard commands to navigate the robot through the space of interest.
