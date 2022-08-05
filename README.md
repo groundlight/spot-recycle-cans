@@ -13,7 +13,7 @@ Groundlight's repository of tools + demos for Spot the robot dog.
 5. Run all code with 192.168.50.3 as the Robot IP.
 
 ### Spot Connection over Spot wifi (not preferred):
-1. Connect to spot_bd_00016 wifi. The password can be found inside the battery cavity of spot.
+1. Connect to spot-BD-10110016 wifi. The password can be found inside the battery cavity of spot.
 2. Execute "ping "192.168.80.3" and verify that you get an appropriate response from the robot.
 3. Run all code with 192.168.80.3 as the Robot IP.
 
