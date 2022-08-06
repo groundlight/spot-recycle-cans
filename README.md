@@ -2,10 +2,10 @@
 Groundlight's repository of tools + demos for Spot the robot dog.
 
 ## Code Organization:
-* `spot_setup`: View this first and get setup to run code on spot through the Jetson Backpack or locally.
+* `spot_setup`: Get setup to run code on Spot on a brand new Jetson or locally. Note that the current Jetson on spot is already setup.
 * `spot_tools`: Scripts to drive spot with the keyboard and map a space so Spot can autonomously navigate.
-* `spot_gl`: Library of useful functions developed for spot. Includes initialization, movement, object detection, and navigation of spaces.
-* `spot_demos`: Applications of Spot. Scripts here draw upon spot_gl as well as maps created with spot_tools.
+* `spot_lib.py`: Library of useful functions developed for spot. Includes initialization, movement, object detection, and navigation of spaces.
+* `notebooks`: Applications of Spot. Notebooks here draw upon spot_lib.py and maps of spaces.
 
 ## Spot Basics
 #### Spot Bootup:
