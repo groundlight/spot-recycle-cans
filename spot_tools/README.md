@@ -2,12 +2,12 @@
 Key tools available to Spot users.
 Files copied from https://github.com/boston-dynamics/spot-sdk/tree/master/python/examples
 
-To use the following tools create a new terminal and follow the instructions for "Spot Jetson Connection" in the top-level directory README then navigate to the tools folder via ```cd ~/groundlight/bdspot/spot/tools/```
+To use the following tools create a new terminal and follow the instructions for "Spot Jetson Connection" in the top-level directory README and **navigate to the tools folder** via ```cd ~/groundlight/bdspot/spot/tools/```
 
 ### spot_estop:
 An estop allows the Spot's user to instantly cut power to Spot in the event of a failure. Instructions to set up an estop are as follows.
 
-1. Run the estop script via ```python3 spot_estop.py. -i [YOUR_COMPUTER_IP] 192.168.50.3```
+1. Run the estop script via ```python3 estop.py. -i [YOUR_COMPUTER_IP] 192.168.50.3```
 2. Arm Spot by physically pressing the circular button on the back of the robot to the right of the power button. A red light around this button will be visible when the robot is armed.
 3. Hit 'r' to release the estop. The terminal will display a green 'NOT ESTOPPED'.
 4. **Hit SPACE to activate the estop.** This will immediately cut power to the robot's motors and it will collapse.
@@ -37,7 +37,7 @@ An estop allows the Spot's user to instantly cut power to Spot in the event of a
     
     
 2. **Initalize robot position:** 
-    - Follow the instructions above in the "spot_wasd" section to start up keyboard control of spot and drive the robot to a desired starting position where it can see a fiducial. 
+    - Follow the instructions above in the "wasd" section to start up keyboard control of spot and drive the robot to a desired starting position where it can see a fiducial. 
     - Leave the robot in a standing position.
     
     
@@ -47,7 +47,6 @@ An estop allows the Spot's user to instantly cut power to Spot in the event of a
     - Clear the map by typing ```0``` + ```ENTER```
     - Start recording by typing ```1``` + ```ENTER```
     - Verify that recording started by typing ```3``` + ```ENTER```
-    s
     
 4. **Navigate Robot through space:**
     - Use keyboard commands to navigate the robot through the space of interest.
@@ -63,7 +62,8 @@ An estop allows the Spot's user to instantly cut power to Spot in the event of a
     - Optimize map by typing ```a``` + ```ENTER```
     - Stop recording by typing ```2``` + ```ENTER```
     - Download the map by typing ```5``` + ```ENTER```
-    - Move/rename the downloaded graph folder in ~/groundlight/bdspot/spot/tools/ to the desired location
+    - Quit recording script via CTRL^C
+    - Move the map into the graphs folder ```cd ~/groundlight/bdspot/spot``` followed by ```mv downloaded_graph graphs/[DESIRED_GRAPH_NAME]```
     
     
 6. **Viewing the Map:** 
