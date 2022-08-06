@@ -16,6 +16,20 @@ Groundlight's repository of tools + demos for Spot the robot dog.
 1. Connect to spot-BD-10110016 wifi. The password can be found inside the battery cavity of spot.
 2. Execute "ping "192.168.80.3" and verify that you get an appropriate response from the robot.
 3. Run all code with 192.168.80.3 as the Robot IP.
+4. Note that this is a different address from the one used by the Jetson to communicate with the robot.
+
+### Autonomous Grasping Tool:
+1. Connect to spot through Jetson.
+2. Call ```python3 objDataCollect.py --hostname [ROBOT_IP] --GROUNDLIGHT_API_TOKEN [YOUR_GROUNDLIGHT_API_TOKEN] --DETECTOR_ID [OBJECT_DETECTOR_ID] --GRAPH_PATH [PATH TO GRAPH OF SPACE]```
+3. Example (will run on Jetson using a tape roll detector): python3 objDataCollect.py --hostname 192.168.50.3 --GROUNDLIGHT_API_TOKEN $GROUNDLIGHT_API_TOKEN --DETECTOR_ID det_2CH9fxrXociWrb05tDmPblqoedW --GRAPH_PATH ~/groundlight/bdspot/spot/graphs/office_graph_8_1/
+4. Robot will walk through waypoints present in graph, and repeatedly drop an object, localize it with the provided detector, and attempt to grasp it. It will re-attempt a grasp 5 times before asking for a human to return the object to the gripper via a console warning.
+5. Object detector id's are provided here incase testing on different objects is desired:
+    - Metal Wrench: det_2CoeZWa0MKfNIDGxneBmVtAvcVp
+    - Blue Paper Towel Roll: det_2CHAr7ANClu8stvhbvAnzFiTK9m
+    - Aluminum Can: det_2CH6dRdu8XlXiSCQmfYudZcs3ev
+    - Rubik's Cube: det_2CE1cYK7CzWVixNEj0SQlptb9ZF
+    - Whiteboard Eraser: det_2BMUhuS29G9JTZcCw1NrMleuqSy
+    
 
 ### Spot Shutdown:
 1. Close all scripts/notebooks running on spot 
