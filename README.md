@@ -1,5 +1,8 @@
-# spot
-Groundlight's repository of tools + demos for Spot the robot dog.
+# Quadruped Robot Recycling Soda Cans
+
+Demonstration of using Groundlight SDK to locate soda cans and place them in a recycling bin.
+
+This code was developed during a summer internship.  It is not production quality, and should not be relied on for real commercial applications.  It is a proof-of-concept and demonstration of capabilities only.
 
 ## How to boot up Spot
 1. Plug a battery into spot.
