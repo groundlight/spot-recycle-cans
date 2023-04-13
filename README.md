@@ -2,7 +2,26 @@
 
 Demonstration of using Groundlight SDK to locate soda cans and place them in a recycling bin.
 
+## Notice: Proof of concept only
+
 This code was developed during a summer internship.  It is not production quality, and should not be relied on for real commercial applications.  It is a proof-of-concept and demonstration of capabilities only.
+
+## Application
+
+The robot is programmed to walk a pre-programmed path looking for soda cans on the ground.  The cans are detected using a Groundlight detector.  When identified, the robot carries them to a recycling bin and drops them in.
+
+![Finding a can](./imgs/picking-up-can.jpeg)
+![Recycling it](./imgs/dropping-can-in-bin.jpeg)
+
+
+## SDK running in Groundlight Backpack
+
+This application code runs on a Groundlight Backpack, which houses an NVIDIA Jetson Nano, mounted to the back of the robot.  The Backpack runs the Groundlight SDK, and controls the robot and its camera through an ethernet interface, and talks to the Groundlight API in the cloud over WiFI.
+
+![Groundlight Backpack](./imgs/groundlight-jetson-backpack.jpeg)
+
+
+# Instructions
 
 ## How to boot up Spot
 1. Plug a battery into spot.
